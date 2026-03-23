@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - MedCare HMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Welcome back, {{ current_user.full_name }}! Here's your hospital overview.</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline-primary btn-sm" onclick="loadDashboard()">
+            <i class="fas fa-sync-alt me-1"></i> Refresh
+        </button>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions mb-4">
+    <a href="{{ url_for('patients') }}" class="quick-action-btn" id="quickAddPatient">
+        <div class="quick-action-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb)">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <span>Add Patient</span>
+    </a>
+    <a href="{{ url_for('appointments') }}" class="quick-action-btn" id="quickBookAppt">
+        <div class="quick-action-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed)">
+            <i class="fas fa-calendar-plus"></i>
+        </div>
+        <span>Book Appointment</span>
+    </a>
+    <a href="{{ url_for('billing') }}" class="quick-action-btn" id="quickGenBill">
+        <div class="quick-action-icon" style="background: linear-gradient(135deg, #10b981, #059669)">
+            <i class="fas fa-file-invoice-dollar"></i>
+        </div>
+        <span>Generate Bill</span>
+    </a>
+    <a href="{{ url_for('ai_features') }}" class="quick-action-btn" id="quickAI">
+        <div class="quick-action-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706)">
+            <i class="fas fa-robot"></i>
+        </div>
+        <span>AI Assistant</span>
+    </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4" id="statsCards">
+    {% if current_user.role == 'admin' %}
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card stats-card-orange">
+            <div class="stats-card-body">
+                <div class="stats-info">
+                    <p class="stats-label">Revenue</p>
+                    <h3 class="stats-value" id="totalRevenue">--</h3>
+                    <span class="stats-detail">Total collected</span>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+            </div>
+            <div class="stats-card-footer">
+                <i class="fas fa-chart-line me-1"></i> All time
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <div class="col-xl-{% if current_user.role == 'admin' %}3{% else %}4{% endif %} col-md-6">
+        <div class="stats-card stats-card-blue">
+            <div class="stats-card-body">
+                <div class="stats-info">
+                    <p class="stats-label">Total Patients</p>
+                    <h3 class="stats-value" id="totalPatients">--</h3>
+                    <span class="stats-detail"><span id="activePatients">0</span> active</span>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+            <div class="stats-card-footer">
+                <i class="fas fa-arrow-up me-1"></i> Updated just now
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-{% if current_user.role == 'admin' %}3{% else %}4{% endif %} col-md-6">
+        <div class="stats-card stats-card-purple">
+            <div class="stats-card-body">
+                <div class="stats-info">
+                    <p class="stats-label">Doctors</p>
+                    <h3 class="stats-value" id="totalDoctors">--</h3>
+                    <span class="stats-detail">Active specialists</span>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-user-md"></i>
+                </div>
+            </div>
+            <div class="stats-card-footer">
+                <i class="fas fa-stethoscope me-1"></i> All departments
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-{% if current_user.role == 'admin' %}3{% else %}4{% endif %} col-md-6">
+        <div class="stats-card stats-card-green">
+            <div class="stats-card-body">
+                <div class="stats-info">
+                    <p class="stats-label">Appointments</p>
+                    <h3 class="stats-value" id="totalAppointments">--</h3>
+                    <span class="stats-detail"><span id="todayAppointments">0</span> today</span>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+            </div>
+            <div class="stats-card-footer">
+                <i class="fas fa-clock me-1"></i> <span id="pendingAppointments">0</span> pending
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-{% if current_user.role == 'admin' %}8{% else %}12{% endif %}">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title"><i class="fas fa-chart-area me-2 text-primary"></i>Patient & Appointment Trends</h5>
+                <span class="badge bg-light text-dark">Last 7 Days</span>
+            </div>
+            <div class="card-body">
+                <canvas id="trendsChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    {% if current_user.role == 'admin' %}
+    <div class="col-xl-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title"><i class="fas fa-chart-bar me-2 text-success"></i>Revenue Overview</h5>
+                <span class="badge bg-light text-dark">6 Months</span>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Recent Appointments -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-12">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title"><i class="fas fa-clock me-2 text-warning"></i>Recent Appointments</h5>
+                <a href="{{ url_for('appointments') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Doctor</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentAppointmentsBody">
+                            <tr><td colspan="4" class="text-center py-4"><div class="spinner-border spinner-border-sm"></div> Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Insights -->
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card dashboard-card ai-insights-card">
+            <div class="card-header">
+                <h5 class="card-title"><i class="fas fa-brain me-2"></i>AI Insights & Recommendations</h5>
+                <span class="badge bg-gradient-purple text-white">AI Powered</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3" id="aiInsightsContainer">
+                    <div class="col-12 text-center py-4"><div class="spinner-border spinner-border-sm"></div> Analyzing data...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

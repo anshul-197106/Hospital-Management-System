@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Reports - MedCare HMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Medical Reports</h1>
+        <p class="page-subtitle">Upload, manage, and view patient medical reports</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-primary btn-sm" onclick="showUploadReportModal()" id="uploadReportBtn">
+            <i class="fas fa-upload me-1"></i> Upload Report
+        </button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" id="reportSearch" placeholder="Search by patient, title, report ID...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Type</label>
+                <select class="form-select" id="reportTypeFilter">
+                    <option value="">All Types</option>
+                    <option value="blood_test">Blood Test</option>
+                    <option value="x_ray">X-Ray</option>
+                    <option value="mri">MRI</option>
+                    <option value="ct_scan">CT Scan</option>
+                    <option value="ultrasound">Ultrasound</option>
+                    <option value="ecg">ECG</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-primary w-100" onclick="loadReports()">
+                    <i class="fas fa-filter me-1"></i> Filter
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reports Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Report ID</th>
+                        <th>Patient</th>
+                        <th>Type</th>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="reportsTableBody">
+                    <tr><td colspan="7" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted" id="reportsInfo">Showing 0 reports</span>
+            <nav><ul class="pagination pagination-sm mb-0" id="reportsPagination"></ul></nav>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Report Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Medical Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">Patient *</label>
+                        <select class="form-select" id="reportPatient" required></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Report Type *</label>
+                        <select class="form-select" id="reportType" required>
+                            <option value="">Select Type</option>
+                            <option value="blood_test">Blood Test</option>
+                            <option value="x_ray">X-Ray</option>
+                            <option value="mri">MRI</option>
+                            <option value="ct_scan">CT Scan</option>
+                            <option value="ultrasound">Ultrasound</option>
+                            <option value="ecg">ECG</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Title *</label>
+                        <input type="text" class="form-control" id="reportTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="reportDescription" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Results</label>
+                        <textarea class="form-control" id="reportResults" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Upload File</label>
+                        <input type="file" class="form-control" id="reportFile" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
+                        <small class="text-muted">Accepted: PDF, Images, Word documents (max 16MB)</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveReport()">
+                    <i class="fas fa-upload me-1"></i> Upload
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let reportsPage = 1;
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadReports();
+    loadPatientOptions('reportPatient');
+});
+
+function loadReports() {
+    const search = document.getElementById('reportSearch').value;
+    const params = new URLSearchParams({ page: reportsPage, per_page: 10, search });
+
+    fetch(`/api/reports?${params}`)
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('reportsTableBody');
+            if (data.reports.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-file-medical fa-3x mb-3 d-block opacity-25"></i>No reports found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.reports.map(r => `
+                <tr>
+                    <td><span class="fw-semibold text-primary">${r.report_id}</span></td>
+                    <td>${r.patient_name || 'N/A'}</td>
+                    <td><span class="badge bg-info-subtle text-info">${(r.report_type || '').replace('_', ' ').toUpperCase()}</span></td>
+                    <td>${r.title}</td>
+                    <td><span class="badge bg-${r.status === 'completed' ? 'success' : 'warning'}-subtle text-${r.status === 'completed' ? 'success' : 'warning'}">${r.status.toUpperCase()}</span></td>
+                    <td>${new Date(r.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="previewReport(${r.id})" title="Preview/Print"><i class="fas fa-eye"></i></button>
+                            ${r.file_path ? `<a href="/static/${r.file_path}" target="_blank" class="btn btn-sm btn-outline-info" title="Download File"><i class="fas fa-download"></i></a>` : 
+                              `<button class="btn btn-sm btn-outline-info" onclick="simulateDownload(${r.id})" title="Simulate PDF"><i class="fas fa-file-pdf"></i></button>`}
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteReport(${r.id})"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('reportsInfo').textContent = `Showing ${data.reports.length} of ${data.total} reports`;
+        });
+}
+
+function previewReport(id) {
+    // Navigate to a report detail view (simulated)
+    window.open(`/api/reports/${id}/view`, '_blank');
+}
+
+function simulateDownload(id) {
+    showToast('Generating PDF report...', 'info');
+    setTimeout(() => {
+        window.open(`/api/reports/${id}/view`, '_blank');
+    }, 1000);
+}
+
+function getStatusBadge(status) {
+    const s = (status || 'pending').toLowerCase();
+    if (s === 'completed') return '<span class="badge bg-success-subtle text-success">COMPLETED</span>';
+    if (s === 'reviewed') return '<span class="badge bg-primary-subtle text-primary">REVIEWED</span>';
+    return '<span class="badge bg-warning-subtle text-warning">PENDING</span>';
+}
+
+function formatDate(dateStr) {
+    return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function showUploadReportModal() {
+    document.getElementById('reportForm').reset();
+    new bootstrap.Modal(document.getElementById('reportModal')).show();
+}
+
+function saveReport() {
+    const formData = new FormData();
+    formData.append('patient_id', document.getElementById('reportPatient').value);
+    formData.append('report_type', document.getElementById('reportType').value);
+    formData.append('title', document.getElementById('reportTitle').value);
+    formData.append('description', document.getElementById('reportDescription').value);
+    formData.append('results', document.getElementById('reportResults').value);
+
+    const file = document.getElementById('reportFile').files[0];
+    if (file) formData.append('file', file);
+
+    fetch('/api/reports', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            bootstrap.Modal.getInstance(document.getElementById('reportModal')).hide();
+            showToast('Report uploaded successfully!', 'success');
+            loadReports();
+        })
+        .catch(err => showToast('Error uploading report', 'danger'));
+}
+
+function deleteReport(id) {
+    if (!confirm('Delete this report?')) return;
+    fetch(`/api/reports/${id}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(() => { showToast('Report deleted', 'success'); loadReports(); });
+}
+</script>
+{% endblock %}

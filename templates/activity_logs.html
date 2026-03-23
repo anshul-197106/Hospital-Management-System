@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Activity Logs - MedCare HMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Activity Logs</h1>
+        <p class="page-subtitle">Monitor all system activities and user actions</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                        <th>Entity</th>
+                        <th>Description</th>
+                        <th>IP Address</th>
+                    </tr>
+                </thead>
+                <tbody id="logsTableBody">
+                    <tr><td colspan="7" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted" id="logsInfo">Showing logs</span>
+            <nav><ul class="pagination pagination-sm mb-0" id="logsPagination"></ul></nav>
+        </div>
+    </div>
+</div>
+
+<script>
+let logsPage = 1;
+document.addEventListener('DOMContentLoaded', loadLogs);
+
+function loadLogs() {
+    const tbody = document.getElementById('logsTableBody');
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>';
+    
+    fetch(`/api/activity-logs?page=${logsPage}&per_page=20`)
+        .then(async r => {
+            if (!r.ok || !r.headers.get('content-type')?.includes('application/json')) {
+                const text = await r.text();
+                throw new Error(`Invalid response or status ${r.status}. Data preview: ${text.substring(0, 100)}`);
+            }
+            return r.json();
+        })
+        .then(data => {
+            if (!data.logs || data.logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No activity logs found</td></tr>';
+                return;
+            }
+
+            const actionColors = { login: 'success', logout: 'secondary', create: 'primary', update: 'warning', delete: 'danger' };
+
+            tbody.innerHTML = data.logs.map(log => `
+                <tr>
+                    <td><small>${formatDate(log.created_at)}</small></td>
+                    <td><strong>${log.user_name || 'System'}</strong></td>
+                    <td><span class="badge bg-${log.user_role === 'admin' ? 'danger' : log.user_role === 'doctor' ? 'primary' : 'secondary'}-subtle text-${log.user_role === 'admin' ? 'danger' : log.user_role === 'doctor' ? 'primary' : 'secondary'}">${log.user_role || 'N/A'}</span></td>
+                    <td><span class="badge bg-${actionColors[log.action] || 'info'}">${log.action}</span></td>
+                    <td>${log.entity_type || '--'}</td>
+                    <td>${log.description || '--'}</td>
+                    <td><code>${log.ip_address || '--'}</code></td>
+                </tr>
+            `).join('');
+
+            document.getElementById('logsInfo').textContent = `Showing ${data.logs.length} of ${data.total} logs`;
+            if (typeof renderPagination === 'function') {
+                renderPagination('logsPagination', data.pages, logsPage, (p) => { logsPage = p; loadLogs(); });
+            }
+        })
+        .catch(err => {
+            console.error('Fetch error:', err);
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger"><h5>Error Loading Activity Logs</h5><p>${err.message}</p></td></tr>`;
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Patients - MedCare HMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Patient Management</h1>
+        <p class="page-subtitle">Manage patient records, registrations, and medical history</p>
+    </div>
+    <div class="page-actions">
+        <a href="/api/export/patients" class="btn btn-outline-secondary btn-sm me-2">
+            <i class="fas fa-download me-1"></i> Export CSV
+        </a>
+        <button class="btn btn-primary btn-sm" onclick="showAddPatientModal()" id="addPatientBtn">
+            <i class="fas fa-plus me-1"></i> Add Patient
+        </button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="form-control" id="patientSearch" placeholder="Search by name, ID, phone...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="patientStatusFilter">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="discharged">Discharged</option>
+                    <option value="critical">Critical</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Sort By</label>
+                <select class="form-select" id="patientSort">
+                    <option value="created_at">Date Added</option>
+                    <option value="first_name">Name</option>
+                    <option value="patient_id">Patient ID</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-primary w-100" onclick="loadPatients()">
+                    <i class="fas fa-filter me-1"></i> Filter
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Patients Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Patient ID</th>
+                        <th>Name</th>
+                        <th>Age/Gender</th>
+                        <th>Phone</th>
+                        <th>Blood Group</th>
+                        <th>Status</th>
+                        <th>Doctor</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="patientsTableBody">
+                    <tr><td colspan="8" class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Loading patients...</p></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted" id="patientsInfo">Showing 0 patients</span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0" id="patientsPagination"></ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Patient Modal -->
+<div class="modal fade" id="patientModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="patientModalTitle">Add New Patient</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="patientForm">
+                    <input type="hidden" id="editPatientId">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="patFirstName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="patLastName" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Date of Birth *</label>
+                            <input type="date" class="form-control" id="patDOB" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Gender *</label>
+                            <select class="form-select" id="patGender" required>
+                                <option value="">Select</option>
+                                <option value="M">Male</option>
+                                <option value="F">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Blood Group</label>
+                            <select class="form-select" id="patBloodGroup">
+                                <option value="">Select</option>
+                                <option value="A+">A+</option><option value="A-">A-</option>
+                                <option value="B+">B+</option><option value="B-">B-</option>
+                                <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                                <option value="O+">O+</option><option value="O-">O-</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Phone *</label>
+                            <input type="tel" class="form-control" id="patPhone" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="patEmail">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" id="patAddress" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Emergency Contact Name</label>
+                            <input type="text" class="form-control" id="patEmergencyName">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Emergency Contact Phone</label>
+                            <input type="tel" class="form-control" id="patEmergencyPhone">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Medical History</label>
+                            <textarea class="form-control" id="patMedHistory" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Allergies</label>
+                            <input type="text" class="form-control" id="patAllergies">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Current Medications</label>
+                            <input type="text" class="form-control" id="patMedications">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Insurance Provider</label>
+                            <input type="text" class="form-control" id="patInsurance">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Insurance ID</label>
+                            <input type="text" class="form-control" id="patInsuranceId">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ward</label>
+                            <select class="form-select" id="patWard">
+                                <option value="">Select</option>
+                                <option value="General Ward A">General Ward A</option>
+                                <option value="General Ward B">General Ward B</option>
+                                <option value="ICU">ICU</option>
+                                <option value="Pediatrics">Pediatrics</option>
+                                <option value="Cardiology">Cardiology</option>
+                                <option value="Emergency">Emergency</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Bed Number</label>
+                            <input type="text" class="form-control" id="patBed">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Assigned Doctor</label>
+                            <select class="form-select" id="patDoctor">
+                                <option value="">Select Doctor</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="savePatient()" id="savePatientBtn">
+                    <i class="fas fa-save me-1"></i> Save Patient
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Patient Modal -->
+<div class="modal fade" id="viewPatientModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Patient Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="viewPatientBody">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/patients.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Register - MedCare HMS{% endblock %}
+
+{% block auth_content %}
+<div class="auth-wrapper">
+    <div class="auth-bg">
+        <div class="auth-shape auth-shape-1"></div>
+        <div class="auth-shape auth-shape-2"></div>
+        <div class="auth-shape auth-shape-3"></div>
+    </div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-card-left">
+                <div class="auth-brand">
+                    <div class="auth-logo-icon">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <h2>MedCare HMS</h2>
+                    <p>Hospital Management System</p>
+                </div>
+                <div class="auth-features">
+                    <div class="auth-feature">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Easy staff registration</span>
+                    </div>
+                    <div class="auth-feature">
+                        <i class="fas fa-lock"></i>
+                        <span>Role-based secure access</span>
+                    </div>
+                    <div class="auth-feature">
+                        <i class="fas fa-hospital"></i>
+                        <span>Complete hospital management</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-card-right">
+                <div class="auth-form-header">
+                    <h3>Create Account</h3>
+                    <p>Register as a new staff member</p>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <form method="POST" class="auth-form" id="registerForm">
+                    <div class="form-floating-custom">
+                        <div class="input-icon-wrapper">
+                            <i class="fas fa-user"></i>
+                            <input type="text" class="form-control" id="full_name" name="full_name"
+                                   placeholder="Full Name" required>
+                        </div>
+                    </div>
+
+                    <div class="form-floating-custom">
+                        <div class="input-icon-wrapper">
+                            <i class="fas fa-at"></i>
+                            <input type="text" class="form-control" id="username" name="username"
+                                   placeholder="Username" required>
+                        </div>
+                    </div>
+
+                    <div class="form-floating-custom">
+                        <div class="input-icon-wrapper">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   placeholder="Email Address" required>
+                        </div>
+                    </div>
+
+                    <div class="form-floating-custom">
+                        <div class="input-icon-wrapper">
+                            <i class="fas fa-phone"></i>
+                            <input type="tel" class="form-control" id="phone" name="phone"
+                                   placeholder="Phone Number">
+                        </div>
+                    </div>
+
+                    <div class="form-floating-custom">
+                        <div class="input-icon-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" class="form-control" id="password" name="password"
+                                   placeholder="Password" required minlength="6">
+                            <button type="button" class="password-toggle" onclick="togglePassword('password')">
+                                <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary auth-submit-btn" id="registerBtn">
+                        <i class="fas fa-user-plus me-2"></i> Create Account
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Already have an account? <a href="{{ url_for('login') }}">Sign In</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    const icon = document.getElementById(fieldId + 'ToggleIcon');
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        field.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+</script>
+{% endblock %}

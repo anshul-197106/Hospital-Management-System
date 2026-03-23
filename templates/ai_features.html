@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}AI Assistant - MedCare HMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-robot me-2"></i>AI Assistant</h1>
+        <p class="page-subtitle">AI-powered tools for disease prediction, load forecasting, risk analysis, and chatbot</p>
+    </div>
+</div>
+
+<!-- AI Feature Tabs -->
+<ul class="nav nav-pills ai-tabs mb-4" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#symptomChecker">
+            <i class="fas fa-stethoscope me-1"></i> Symptom Checker
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#riskAnalysis">
+            <i class="fas fa-exclamation-triangle me-1"></i> Risk Analysis
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Symptom Checker -->
+    <div class="tab-pane fade show active" id="symptomChecker">
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card dashboard-card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fas fa-search-plus me-2 text-primary"></i>Enter Symptoms</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">Select or type symptoms to get AI-powered disease predictions.</p>
+                        <div class="symptom-tags mb-3" id="selectedSymptoms"></div>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="symptomInput" placeholder="Type a symptom (e.g., headache, fever)">
+                            <button class="btn btn-outline-primary" onclick="addSymptom()">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="common-symptoms">
+                            <small class="text-muted d-block mb-2">Common symptoms:</small>
+                            <div class="d-flex flex-wrap gap-1">
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('fever')">Fever</button>
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('headache')">Headache</button>
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('cough')">Cough</button>
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('fatigue')">Fatigue</button>
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('body ache')">Body Ache</button>
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('nausea')">Nausea</button>
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('sore throat')">Sore Throat</button>
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('chest pain')">Chest Pain</button>
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('dizziness')">Dizziness</button>
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('breathing difficulty')">Breathing Difficulty</button>
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('rash')">Rash</button>
+                                <button class="btn btn-sm btn-outline-secondary symptom-quick" onclick="quickAddSymptom('vomiting')">Vomiting</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100 mt-3" onclick="predictDisease()" id="predictBtn">
+                            <i class="fas fa-brain me-1"></i> Analyze Symptoms
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="card dashboard-card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fas fa-clipboard-list me-2 text-success"></i>Prediction Results</h5>
+                    </div>
+                    <div class="card-body" id="predictionResults">
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-microscope fa-3x mb-3 opacity-25"></i>
+                            <p>Enter symptoms and click "Analyze" to get predictions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Analysis -->
+    <div class="tab-pane fade" id="riskAnalysis">
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fas fa-heartbeat me-2 text-danger"></i>Patient Health Parameters</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label">Age</label>
+                                <input type="number" class="form-control" id="riskAge" value="45" min="0" max="120">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">BMI</label>
+                                <input type="number" class="form-control" id="riskBMI" value="24" step="0.1">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">BP Systolic</label>
+                                <input type="number" class="form-control" id="riskBPSys" value="120">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">BP Diastolic</label>
+                                <input type="number" class="form-control" id="riskBPDia" value="80">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Blood Sugar (mg/dL)</label>
+                                <input type="number" class="form-control" id="riskSugar" value="100">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Heart Rate (bpm)</label>
+                                <input type="number" class="form-control" id="riskHR" value="72">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">SpO2 (%)</label>
+                                <input type="number" class="form-control" id="riskSpO2" value="98">
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="riskSmoker">
+                                    <label class="form-check-label" for="riskSmoker">Smoker</label>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100 mt-3" onclick="analyzeRisk()">
+                            <i class="fas fa-search me-1"></i> Analyze Risk
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="card dashboard-card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fas fa-chart-pie me-2 text-warning"></i>Risk Assessment</h5>
+                    </div>
+                    <div class="card-body" id="riskResults">
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-shield-alt fa-3x mb-3 opacity-25"></i>
+                            <p>Enter health parameters and click "Analyze Risk"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/ai.js') }}"></script>
+{% endblock %}
